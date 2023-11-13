@@ -7,7 +7,7 @@ def is_subarray(A, B):
             return True
     return False
 
-def get_sides(triangles, vertices):
+def get_edges(triangles, vertices):
     origins = []
     ends = []
     for triangle in triangles:
@@ -34,7 +34,7 @@ mesh.compute_vertex_normals()
 mesh.compute_adjacency_list()
 triangles = np.array(mesh.triangles)
 vertices = np.array(mesh.vertices)
-origins, ends = get_sides(triangles,vertices)
+origins, ends = get_edges(triangles,vertices)
 origins, ends = remove_dublicates(origins, ends)
 print('Number of edges in the shape:', origins.shape[0])
 o3d.visualization.draw_geometries([mesh])

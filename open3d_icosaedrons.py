@@ -7,7 +7,7 @@ def is_subarray(A, B):
             return True
     return False
 
-def get_sides(triangles, vertices):
+def get_edges(triangles, vertices):
     origins = []
     ends = []
     for triangle in triangles:
@@ -37,7 +37,7 @@ R = earth.get_rotation_matrix_from_xyz((np.pi / 2, 0, np.pi / 4))
 earth.rotate(R, center=(0, 0, 0))
 triangles = np.array(earth.triangles)
 vertices = np.array(earth.vertices)
-originsE, endsE = get_sides(triangles,vertices)
+originsE, endsE = get_edges(triangles,vertices)
 originsE, endsE = remove_dublicates(originsE, endsE)
 
 moon = o3d.geometry.TriangleMesh.create_icosahedron(radius=0.1) 
@@ -48,7 +48,7 @@ R = moon.get_rotation_matrix_from_xyz((np.pi / 4, 0, np.pi / 2))
 moon.rotate(R, center=(1, 0, 0))
 triangles = np.array(moon.triangles)
 vertices = np.array(moon.vertices)
-originsM, endsM = get_sides(triangles,vertices)
+originsM, endsM = get_edges(triangles,vertices)
 originsM, endsM = remove_dublicates(originsM, endsM)
 print('Number of edges in the shape:', originsM.shape[0])
 o3d.visualization.draw_geometries([earth,moon])
