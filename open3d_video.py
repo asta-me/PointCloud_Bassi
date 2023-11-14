@@ -7,14 +7,14 @@ from my_open3d_utils import compute_edges
 
 radius_earth = 1.0
 radius_moon = 0.3
-pos = np.array((6.0, 1.0, 0.0)) # initial postion of the moon
+pos = np.array((6.0, 1.0, 0.0)) # initial position of the moon
 vel = np.array((0.0,-0.3,0.9)) # initial velocity
 G = 6 # gravitational constant
 M = 1.0 # earth mass
 m = 0.1 # moon mass
 N = 400 # number of frames in the movie
 
-save_video = True
+save_video = False
 full_path = os.path.realpath(__file__) 
 folder, _ = os.path.split(full_path) # save folder for the video 
 
@@ -32,7 +32,7 @@ dt = 0.1
 
 for i in range(N):
 
-    acc = - G*M* pos/norm(pos)**3 # Newton's law
+    acc = - G*M* pos/norm(pos)**3
     vel += acc * dt
     dr = vel * dt
     pos += dr
@@ -57,7 +57,7 @@ for i in range(N):
         filename = os.path.join(folder,'video',f"image_{i:05d}.png")
         plt.imsave(filename, np.asarray(image), dpi = 0.1)
 
-    oringinsM,endsM = compute_edges(moon) # take this and use it for the hologram calculation
+    oringinsM,endsM = compute_edges(moon) # take these points and use it for the hologram calculation
     oringinsE,endsE = compute_edges(earth)
 
 vis.destroy_window()
