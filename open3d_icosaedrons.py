@@ -52,3 +52,4 @@ originsM, endsM = get_edges(triangles,vertices)
 originsM, endsM = remove_dublicates(originsM, endsM)
 print('Number of edges in the shape:', originsM.shape[0])
 o3d.visualization.draw_geometries([earth,moon])
+
