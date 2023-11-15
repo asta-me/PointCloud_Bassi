@@ -21,8 +21,9 @@ save_video = False
 full_path = os.path.realpath(__file__) 
 folder, _ = os.path.split(full_path) # save folder for the video 
 
-earth = o3d.geometry.TriangleMesh.create_icosahedron(radius=radius_earth) 
-moon = o3d.geometry.TriangleMesh.create_icosahedron(radius=radius_moon) 
+earth = o3d.geometry.TriangleMesh.create_sphere(radius=radius_earth,resolution =4)
+ 
+moon = o3d.geometry.TriangleMesh.create_sphere(radius=radius_moon,resolution =4) 
 moon.translate(pos_moon)
 
 vis = o3d.visualization.Visualizer()
