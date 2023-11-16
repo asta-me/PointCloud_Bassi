@@ -1,5 +1,7 @@
 import open3d as o3d
 import numpy as np
+import os
+import matplotlib.pyplot as plt
 
 def is_subarray(A, B):
     for subB in B:
@@ -34,3 +36,42 @@ def remove_dublicates(origins, ends):
     selected_ends = np.delete(ends,duplicate_indexes,axis=0)
     return selected_origins, selected_ends
   
+def visualizer(function):
+
+    def inner(*args,**kwargs):
+        try:
+            show_animation = kwargs['show_animation']
+        except:
+            show_animation = False
+        try:
+            save_video = kwargs['save_video']
+        except:
+            save_video = False
+
+        if show_animation or save_video:
+            vis = o3d.visualization.Visualizer()
+            vis.create_window()
+            idx = 0
+        for o,e,mesh_list,mesh_to_remove_list in function(*args, **kwargs): 
+            if show_animation or save_video:
+                for mesh in mesh_list:
+                    if idx==0:
+                        vis.add_geometry(mesh)
+                    else:
+                        mesh_to_remove_list
+                        vis.update_geometry(mesh)
+                for mesh in mesh_to_remove_list:
+                    vis.remove_geometry(mesh) 
+                vis.poll_events()
+                # vis.update_renderer()
+                if save_video:
+                    full_path = os.path.realpath(__file__) 
+                    folder, _ = os.path.split(full_path) # save folder for the video
+                    image = vis.capture_screen_float_buffer(False)
+                    filename = os.path.join(folder,'video',f"image_{idx:05d}.png")
+                    plt.imsave(filename, np.asarray(image), dpi = 1)
+                idx+=1     
+            yield o,e
+        if show_animation or save_video:
+            vis.destroy_window()
+    return inner
