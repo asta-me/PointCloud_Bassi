@@ -10,5 +10,5 @@ earth.rotate(R, center=(0, 0, 0))
 
 origins, ends = compute_edges(earth)
 print('Number of edges:', origins.shape)
-print('Maximum distance from the center of the field of view:', np.max(origins))
+print('Maximum displacement from the center of the field of view:', np.max(np.abs(origins),axis=0))
 o3d.visualization.draw_geometries([earth])

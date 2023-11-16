@@ -11,11 +11,11 @@ G = 1 # gravitational constant
 M = 5.0 # earth mass
 m = 0.5 # moon mass
 N = 600 # number of frames in the movie
-pos_moon = np.array((0.8, -0.9, 0.0)) # initial position of the moon
-vel_moon = np.array((0.0, -0.2, 1.6)) # initial velocity of the moon
-pos_earth = np.array((0.0, 0.0, 0.0)) # initial position of the earth
+pos_moon = np.array((0.8, -0.9, -1.0)) # initial position of the moon
+vel_moon = np.array((0.0, -0.2, -3.0)) # initial velocity of the moon
+pos_earth = np.array((0.0, 0.0, -1.0)) # initial position of the earth
 vel_earth = -vel_moon*m/M # initial velocity of the earth with conservation of momentum
-
+vel_earth+=np.array((0.0, 0.0, -1))
 
 save_video = False
 full_path = os.path.realpath(__file__) 
@@ -74,6 +74,8 @@ for i in range(N):
 
     origins = np.concatenate((originsM,originsE))
     ends = np.concatenate((endsM,endsE))
+
+    #print(f'Calculating {origins.shape[0]} edges')
     print('Maximum displacement from the center of the field of view:', np.max(np.abs(origins),axis=0))
 
 vis.destroy_window()

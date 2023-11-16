@@ -131,6 +131,6 @@ for i in range(time_points):
             counts+=1
     
     # print(f'Calculating {origins.shape[0]} edges for rendering {counts} bodies')
-    print('Maximum distance from the center of the field of view:', np.max(origins)) # maximun value of x,y or z
+    print('Maximum displacement from the center of the field of view:', np.max(np.abs(origins),axis=0))
              
 vis.destroy_window()
