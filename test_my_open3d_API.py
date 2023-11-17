@@ -1,18 +1,18 @@
-from my_open3d_API import satellite, oscillator,escaping_planet, Nbody_problem, vibrations
+from my_open3d_API import satellite, oscillator, escaping_planet, Nbody_problem, vibrations
 from my_open3d_utils import find_lines_from_mesh_list
 import numpy as np
 
 """Example code: use any of the imported function as a generator"""
 
-for mesh_list in satellite(time_points=50,
+for mesh_list in satellite(time_points=200,
                                 show_animation=True,
-                                remove_hidden_lines=True,
-                                show_mesh=False,
+                                remove_hidden_lines=False,
+                                show_mesh=True,
                                 save_video=False):
 
-    _line_set = find_lines_from_mesh_list(mesh_list)
-    points = np.asarray(_line_set.points)
-    lines = np.asarray(_line_set.lines)
+    line_set = find_lines_from_mesh_list(mesh_list)
+    points = np.asarray(line_set.points)
+    lines = np.asarray(line_set.lines)
 
     origins = points[lines[:,0]] 
     ends = points[lines[:,1]]

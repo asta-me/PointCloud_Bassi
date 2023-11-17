@@ -24,21 +24,47 @@ def find_lines_from_mesh_list(mesh_list):
     full_line_set = merge_line_sets(line_sets_list) 
     return full_line_set
 
+def _remove_hidden_lines(input_line_set):
+    """Removes lines further away from the center of mass of each shape"""
+    points = np.asarray(input_line_set.points)
+    lines = np.asarray(input_line_set.lines)
+    origins = points[lines[:,0]] 
+    ends = points[lines[:,1]]
+    center = np.mean(origins, axis=0)
+    idx_visible = origins[:,2]>center[2]
+    visible_origins = origins[idx_visible]
+    visible_ends = ends[idx_visible]
+    pcd0 = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(visible_origins))
+    pcd1 = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(visible_ends))
+    t= tuple(range(0,visible_origins.shape[0]))
+    correpondences = [(i, i) for i in range(visible_origins.shape[0])]
+    line_set = o3d.geometry.LineSet.create_from_point_cloud_correspondences(pcd0,pcd1,correpondences)
+    return line_set
+
+def remove_hidden_lines(input_line_set):
+    """"Removes lines using builtin open3D function hidden_point_removal"""
+    points = np.asarray(input_line_set.points)
+    lines = np.asarray(input_line_set.lines)
+    origins = points[lines[:,0]] 
+    ends = points[lines[:,1]]
+    pcdO = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(origins))
+    pcdE = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(ends))
+    diameter = norm(np.asarray(pcdO.get_min_bound()) - np.asarray(pcdO.get_max_bound()))
+    camera = [0, 0, diameter]
+    radius = diameter * 10
+    _visible_mesh, _pts_indexes = pcdO.hidden_point_removal(camera, radius)
+    _pcdO = pcdO.select_by_index(_pts_indexes)
+    _pcdE = pcdE.select_by_index(_pts_indexes)
+    correpondences = [(i, i) for i in range(len(_pts_indexes))]
+    line_set = o3d.geometry.LineSet.create_from_point_cloud_correspondences(_pcdO,_pcdE,correpondences)
+    return line_set
+
 def find_visible_lines_from_mesh_list(mesh_list):
     line_sets_list = []
     for mesh in mesh_list:
         if np.asarray(mesh.vertices).size > 0:
-            line_set = find_lines_from_mesh(mesh)
-            pcd = o3d.geometry.PointCloud()
-            pcd.points = o3d.utility.Vector3dVector(line_set.points)
-            lines = line_set.lines
-            pts = np.array(pcd.points)
-            center = np.mean(pts, axis=0)
-            idx_visible = pts[:,2]>center[2] 
-            pcd_visible = pcd.select_by_index(idx_visible) 
-            visible_pts = pts[idx_visible]
-            print(visible_pts)
-            line_sets_list.append(line_set)
+            _line_set = find_lines_from_mesh(mesh)
+            line_sets_list.append(remove_hidden_lines(_line_set))
     full_line_set = merge_line_sets(line_sets_list) 
     return full_line_set
 
@@ -57,6 +83,18 @@ def _find_visible_lines_from_mesh_list(mesh_list):
     full_line_set = merge_line_sets(line_sets_list) 
     return full_line_set
 
+def crop_meshes(mesh_list):
+    """Crops the mesh along z (axis 2) cutting the bounding box."""
+    cropped_mesh_list = []
+    for mesh in mesh_list:
+        #bbox = mesh.get_oriented_bounding_box()
+        bbox = mesh.get_axis_aligned_bounding_box()
+        bbox_points = np.asarray(bbox.get_box_points())
+        bbox_points[:,2] = np.clip(bbox_points[:,2], a_min=0.0, a_max=None)
+        bbox_cropped = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(bbox_points))
+        mesh_cropped = mesh.crop(bbox_cropped)
+        cropped_mesh_list.append(mesh_cropped)
+    return cropped_mesh_list
 
 def visualizer(function):
     def inner(*args,**kwargs):
@@ -82,6 +120,8 @@ def visualizer(function):
             time_idx = 0
         for mesh_list in function(*args, **kwargs):
             if remove_hidden_lines:
+                # cropped_list = crop_meshes(mesh_list)
+                #last_line_set = find_lines_from_mesh_list(cropped_list)
                 last_line_set = find_visible_lines_from_mesh_list(mesh_list)
             else:
                 last_line_set = find_lines_from_mesh_list(mesh_list)
