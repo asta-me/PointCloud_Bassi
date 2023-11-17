@@ -7,7 +7,7 @@ import numpy as np
 for mesh_list in satellite(time_points=200,
                                 show_animation=True,
                                 remove_hidden_lines=False,
-                                show_mesh=True,
+                                show_mesh=False,
                                 save_video=False):
 
     line_set = find_lines_from_mesh_list(mesh_list)
