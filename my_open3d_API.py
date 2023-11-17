@@ -1,14 +1,13 @@
 import open3d as o3d
 import numpy as np
 from numpy.linalg import norm
-from my_open3d_utils import compute_edges, visualizer
+from my_open3d_utils import visualizer
 
 class Body:
     def __init__(self, radius =1.0, mass = 1.0,
                  pos = np.array((0.,0.,0.)),
                  vel = np.array((0.,0.,0.)),
                  spin_angle=((0.,0.,0.))):
-        self.active = True
         self.radius = radius
         self.mass = mass
         self.pos = pos
@@ -59,10 +58,35 @@ class Body:
         self.mesh.scale(new_radius/self.radius, center=self.pos)
         self.radius = new_radius
         self.mass += other.mass 
-        other.active = False
+        other.mesh.clear() # makes the other body inactive
+
+    def is_body_active(self):
+        return np.asarray(self.mesh.vertices).size > 0
+    
+def get_mesh_from_bodies_list(bodies):
+    mesh_list = []
+    for body in bodies:
+        mesh_list.append(body.mesh)
+    return mesh_list
+
 
 @visualizer
-def satellite(time_points, show_animation=False, save_video=False):
+def your_content(time_points, **kwargs):
+    """
+    Template for adding new contents.
+    Create e list of meshes (open3d.geometry.TriangleMesh) to display in each time_point.
+        time_points: int, number of geometries to generate/visualize.
+        kwargs: boleans, used by the visualizer decorator: show_animation, remove_hidden_lines, show_mesh, save_video. 
+    --> mesh_list: list, yielded at each step of the for loop
+    """
+    
+    for i in range(time_points):
+        mesh_list = []
+        yield mesh_list
+
+
+@visualizer
+def satellite(time_points, **kwargs):
     
     radius_earth = 0.25
     radius_moon = 0.1
@@ -107,18 +131,12 @@ def satellite(time_points, show_animation=False, save_video=False):
         moon.rotate(revolution, center=pos_moon)
         moon.translate(dr_moon)
 
-        originsM,endsM = compute_edges(moon) # take these points and use it for the hologram calculation
-        originsE,endsE = compute_edges(earth)
-        
-        origins = np.concatenate((originsM,originsE))
-        ends = np.concatenate((endsM,endsE))
         mesh_list = [earth,moon]
-        mesh_to_remove_list = []
-        yield(origins,ends,mesh_list,mesh_to_remove_list)
+        yield mesh_list
 
 
 @visualizer
-def Nbody_problem(time_points, show_animation=False, save_video=False):
+def Nbody_problem(time_points, **kwargs):
     
     G = 0.06 # gravitational constant
     Nbodies = 5 # numer of bodies
@@ -135,51 +153,30 @@ def Nbody_problem(time_points, show_animation=False, save_video=False):
         bodies.append(body) 
 
     for i in range(time_points):
-        mesh_to_remove_list = []
         for body in bodies:
             acc = np.array((0.,0.,0.))
             for other_body in bodies:
-                if body.active and other_body.active and body is not other_body:
+                if body.is_body_active() and other_body.is_body_active() and body is not other_body:
                     distance = body.pos - other_body.pos
                     if norm(distance) < (body.radius+other_body.radius):
-                        body.collapse(other_body) 
-                        mesh_to_remove_list.append(other_body.mesh) 
+                        body.collapse(other_body)
                     else:
                         force = - G*body.mass*other_body.mass * distance/norm(distance)**3 # gravitational force on the body
                         acc += force/body.mass
-            body.acc = acc
-        
+            body.acc = acc  
 
         for body in bodies:
             body.move(dt)
             body.spin()
 
-        counts = 0
-        mesh_list = []
-        for body in bodies:
-            if body.active:
-                o,e = compute_edges(body.mesh)
-                if counts == 0:
-                    origins = o
-                    ends = e
-                else:
-                    origins = np.concatenate((origins,o))
-                    ends = np.concatenate((ends,e))
-                counts+=1
-                mesh_list.append(body.mesh)
-
-        # print(f'Calculating {origins.shape[0]} edges for rendering {counts} bodies')
-        # print('Maximum displacement from the center of the field of view:', np.max(np.abs(origins),axis=0))
-    
-        yield(origins,ends,mesh_list,mesh_to_remove_list)
+        yield get_mesh_from_bodies_list(bodies)
 
 @visualizer
-def vibrations(time_points, show_animation=False, save_video=False):
+def vibrations(time_points, **kwargs):
     
     K = 200 # elastic constant
     L = 0.95 # lenght at rest
     dt = 0.01
-
     radius = 0.07
     mass = 1
     angle = 104.95*np.pi/180
@@ -197,7 +194,6 @@ def vibrations(time_points, show_animation=False, save_video=False):
         body.spin_angle = spinning_angle
 
     for i in range(time_points):
-        
         for idx,body in enumerate(bodies):
             acc = np.array((0.,0.,0.))
             if idx == 0:
@@ -206,45 +202,26 @@ def vibrations(time_points, show_animation=False, save_video=False):
                 connected_bodies = [bodies[idx-1] ]
             else:
                 connected_bodies = [bodies[idx-1] , bodies[idx+1] ]
-            
             for other_body in connected_bodies:
                 distance = body.pos - other_body.pos
                 delta = norm(distance)
                 force =  - K * distance/ delta * (delta-L)    # elastic force
                 acc += force/body.mass 
-
             body.acc = acc
-
         for body in bodies:
             body.move(dt)
             body.spin()
 
-        counts = 0
-        mesh_list = []
-        mesh_to_remove_list = []
-        for body in bodies:
-            if body.active:
-                o,e = compute_edges(body.mesh)
-                if counts == 0:
-                    origins = o
-                    ends = e
-                else:
-                    origins = np.concatenate((origins,o))
-                    ends = np.concatenate((ends,e))
-                counts+=1
-                mesh_list.append(body.mesh)
-        
-        yield(origins,ends,mesh_list,mesh_to_remove_list)
+        yield get_mesh_from_bodies_list(bodies)
 
 @visualizer
-def escaping_planet(time_points, show_animation=False, save_video=False):
+def escaping_planet(time_points, **kwargs):
     
     radius_earth = 0.25
     radius_moon = 0.1
     G = 1 # gravitational constant
     M = 5.0 # earth mass
     m = 0.5 # moon mass
-    N = 600 # number of frames in the movie
     pos_moon = np.array((0.8, -0.9, -1.0)) # initial position of the moon
     vel_moon = np.array((0.0, -0.2, -3.0)) # initial velocity of the moon
     pos_earth = np.array((0.0, 0.0, -1.0)) # initial position of the earth
@@ -256,7 +233,7 @@ def escaping_planet(time_points, show_animation=False, save_video=False):
     moon.translate(pos_moon)
 
     dt = 0.01
-    for i in range(N):
+    for i in range(time_points):
         distance = pos_moon-pos_earth
         force = - G*M*m * distance/norm(distance)**3 # force on the moon
         acc_moon = force/m
@@ -271,30 +248,23 @@ def escaping_planet(time_points, show_animation=False, save_video=False):
         pos_moon += dr_moon
         pos_earth += dr_earth
         
-        rotation_angle_earth = 2*np.pi/N
+        rotation_angle_earth = 2*np.pi/time_points
         rotation = earth.get_rotation_matrix_from_axis_angle((0, rotation_angle_earth,0))
         earth.rotate(rotation, center=pos_earth)
         earth.translate(dr_earth)
         
-        rotation_angle_moon = 2*2*np.pi/N
+        rotation_angle_moon = 2*2*np.pi/time_points
         revolution = moon.get_rotation_matrix_from_axis_angle((0,rotation_angle_moon,0))
         moon.rotate(revolution, center=pos_moon)
         moon.translate(dr_moon)
 
-        originsM,endsM = compute_edges(moon) # take these points and use it for the hologram calculation
-        originsE,endsE = compute_edges(earth)
-        
-        origins = np.concatenate((originsM,originsE))
-        ends = np.concatenate((endsM,endsE))
+        mesh_list = [moon,earth]
 
-        mesh_list = [earth,moon]
-        mesh_to_remove_list = []
-        
-        yield(origins,ends,mesh_list,mesh_to_remove_list)
+        yield mesh_list
 
 
 @visualizer
-def oscillator(time_points, show_animation=False, save_video=False):
+def oscillator(time_points, **kwargs):
     
     K = 10 # elastic constant
     L = 1.5 # lenght at rest
@@ -333,31 +303,5 @@ def oscillator(time_points, show_animation=False, save_video=False):
         for body in bodies:
             body.move(dt)
             body.spin()
-
-        counts = 0
-        mesh_list = []
-        mesh_to_remove_list = []
-        for body in bodies:
-            if body.active:
-                o,e = compute_edges(body.mesh)
-                if counts == 0:
-                    origins = o
-                    ends = e
-                else:
-                    origins = np.concatenate((origins,o))
-                    ends = np.concatenate((ends,e))
-                counts+=1
-                mesh_list.append(body.mesh)
-        
-        yield(origins,ends,mesh_list,mesh_to_remove_list)
-
-
-
-"""Example code: use satellite as a generator of origins, ends and meshes"""
-if __name__ == '__main__':
-
-    for origins,ends in oscillator(time_points=500, show_animation=True, save_video=False):
-        #print(f'This time point has {origins.shape[0]} edges')
-        print('Maximum displacement from the center of the field of view:', np.max(np.abs(origins),axis=0))
-
-
+ 
+        yield get_mesh_from_bodies_list(bodies)
