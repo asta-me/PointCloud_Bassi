@@ -161,3 +161,164 @@ def visualizer(function):
             vis.destroy_window()
     return inner
 
+"""Added by Marco Astarita"""
+
+from PIL import Image
+import time
+import sys
+if sys.version_info[0] < 3:
+    get_time=time.clock
+else:
+    get_time=time.perf_counter
+
+def max_extent(z,lam,d,res):
+    L=d*res;
+    theta_max=np.arcsin( lam / (2*d) )
+    z_min=L/(2*np.tan(theta_max));
+    extent = 2 * (z-z_min)*np.tan(theta_max)
+    return extent , z_min
+
+#Prendo origins e ends, muovo l'immagine a distanza z=depth, riscalo x e y 
+#in modo che rientrino nell'ampiezza del cono luce a distanza depth, con margine margin.
+#Se image extent=0, viene calcolato, altrimenti puoi fissare il valore con cui 
+#è stato coreato l'oggetto 3D
+def oe_to_input(origins,ends,depth,lam,d,res,margin=0.005,image_extent=0):
+    x1=origins[:,0]; y1=origins[:,1]; z1=origins[:,2];
+    x2=ends[:,0]; y2=ends[:,1]; z2=ends[:,2];    
+    #Riscalo x e y in modo che rientrino (circa)
+    
+    if image_extent==0:
+        image_extent=max(extent_x,extent_y);
+        extent_y = np.max([y1,y2]) - np.min([y1,y2]); 
+        extent_z = np.max([z1,z2]) - np.min([z1,z2]); 
+        extent_x = np.max([x1,x2]) - np.min([x1,x2]);
+    
+    scale_fact=((max_extent(depth,lam,d,res)[0] - margin ) / image_extent);
+    x1*= scale_fact; y1*= scale_fact; z1*= scale_fact;
+    x2*= scale_fact; y2*= scale_fact; z2*= scale_fact;
+    #Muovo il centro alla distanza focale depth
+    z1 += depth;
+    z2 += depth;
+    return x1,y1,z1,x2,y2,z2
+
+def phase_to_bmp(phase):
+    phase_bmp=((phase/2/np.pi + 0.5)*255).astype("uint8");    
+    return phase_bmp
+
+def save_frame(frame, i, title, subfolder):
+    folder_path = os.path.join(os.getcwd(), subfolder)
+    os.makedirs(folder_path, exist_ok=True)
+    # Costruisci il percorso completo del file
+    file_path = os.path.join(folder_path, f"{title}_{i}.bmp")
+    # Salva l'immagine
+    Image.fromarray(frame).save(file_path)
+
+def rs(x1, y1, z1, x2, y2, z2, d, lam, res):
+    t=get_time()
+    
+    Lx=d*res;
+    PupilRadius =Lx;
+    
+    #Creation of a list of the SLM pixels contained in the pupil
+    slm_xcoord,slm_ycoord=np.meshgrid(np.linspace(-1.0,1.0,res),np.linspace(-1.0,1.0,res))
+    #Grid of res equally spaced points between -1.0 and 1.0
+    pup_coords=np.where(slm_xcoord**2+slm_ycoord**2<1.0)
+    #Mask=0 in the circle inscribed in the SLM square, 0 elsewhere.
+    #Given in the form of a Tuple (xvalues,yvalues) off all the points inside the circle.
+    #TO VISUALIZE IT: fig, ax = plt.subplots();ax.scatter(pup_coords[1], pup_coords[0], s=1, c='black');plt.show()
+    
+    #Array containing the phase of the field at each created spot
+    pists=np.random.random(x1.shape[0])*2*np.pi
+    #1D NumPy array containing random piston values between 0 and 2*pi. 
+    #We want to generate each spot with a radom added phase.
+    #NB:shape (100,), different from a 2D np array with shape (100,1)
+    #NB: x are not physical coordinates on SLM but unitary x coordinates of the points inside the pupil.
+    
+    #Conversion of the coordinates arrays in microns
+    slm_xcoord = slm_xcoord*d*float(res)/2.0
+    slm_ycoord = slm_ycoord*d*float(res)/2.0
+    #Centered Physical coordinates on SLM.
+    #Given L the SLM size, the scaling factor brings from [-1 1] to [-L/2 to L/2]
+    
+    #Computation of the phase patterns generating each single spot independently
+    slm_p_phase = np.zeros((x1.shape[0],pup_coords[0].shape[0]))
+    #Initialize zeros array with size [numberofpointstogenerate , numberofpointsinsidethepupil] 
+    
+    for i in range(x1.shape[0]):
+        #For every trap (i index) want to generate
+        #Create an array of the values slm_p_phase(i,j), j index of the points inside the pupil.
+        #slm_p_phase[i,j] corresponds to the literature Delta_j^i
+        #Basically calculates an independent lens solution for every trap.
+        
+        #Coordinate Conversion
+        # Line Parameters Conversion  
+        [x_mean, y_mean, z0]= [(x1[i]+x2[i])/2, (y1[i]+y2[i])/2, (z1[i]+z2[i])/2 ]
+        
+        gamma = np.arctan2( z2[i] - z1[i] ,\
+                           np.sqrt( (x2[i] - x1[i])**2 + (y2[i] - y1[i])**2) );
+            
+        alpha = - np.arctan2(y2[i] - y1[i], x2[i] - x1[i]);
+        a_1 = np.linalg.norm(np.asarray([x2[i],y2[i],z2[i]]) - np.asarray( [x1[i],y1[i],z1[i]])); #Segment Length
+        a = a_1*np.cos(gamma);         #Projection on SLM Length
+        
+        # Center in Image Plane Coordinates
+        x0 = x_mean*np.cos(alpha) - y_mean*np.sin(alpha);  
+        y0 = x_mean*np.sin(alpha) + y_mean*np.cos(alpha);
+        
+        #Image Plane
+        x_rot = slm_xcoord[pup_coords]*np.cos(alpha) - slm_ycoord[pup_coords]*np.sin(alpha);            #Image Plane Coordinates 
+        y_rot = slm_xcoord[pup_coords]*np.sin(alpha) + slm_ycoord[pup_coords]*np.cos(alpha);
+        R= z0 - (x_rot * np.tan(gamma)) ;  #Variable Line Distance from Hologram Plane
+        R2_inv= (PupilRadius-a)/(z0*PupilRadius);
+        #Per il secondo raggio di curvatura conviene definire l'inverso, così che non è mai infinito.
+        
+        # Cylindrical wave + Restriction + Transverse & Axial Tilt + Shifted    
+        slm_p_phase[i,:]=\
+            (np.pi * y_rot**2 / (lam * R) ) + \
+            (2*np.pi * (x0*x_rot + y0*y_rot) / (lam * z0) )+\
+            (np.pi * R2_inv* x_rot**2 / lam )
+               
+        # slm_p_phase[i,:]=\
+        #     2.0*np.pi/(lam*(f*10.0**3))*\
+        #     (x[i]*slm_xcoord[pup_coords]+y[i]*slm_ycoord[pup_coords])+\
+        #     (np.pi*z[i])/(lam*(f*10.0**3)**2)*\
+        #     (slm_xcoord[pup_coords]**2+slm_ycoord[pup_coords]**2)
+        # slm_p_phase[i,:]=\
+        #     2.0*np.pi/(lam*(f*10.0**3))*\
+        #     (x[i]*slm_xcoord[pup_coords]+y[i]*slm_ycoord[pup_coords])+\
+        #     (np.pi*z[i])/(lam*(f*10.0**3)**2)*\
+        #     (slm_xcoord[pup_coords]**2+slm_ycoord[pup_coords]**2)   
+            
+            
+    #Creation of the hologram, as superposition of all the phase patterns with random pistons
+    slm_total_field=np.sum(\
+                              1.0/(float(pup_coords[0].shape[0]))\
+                              *np.exp(1j*(slm_p_phase+pists[:,None]))\
+                              ,axis=0)
+    #Total intensity on pupil supposed=1: amplitude of each term independent solution=1/Number of points in the pupil.
+    #Phase of each independent solution=2Darray(slm_p_phase (i)) + randompiston(piston(i))
+       
+    #pists[:,None] goes from 1D to 2D np array, to sum it with slm_p_phase
+    #puts all the element in the first dimension, none in the second
+    slm_total_phase=np.angle(slm_total_field)
+
+    t=get_time()-t
+
+    #Evaluation of the algorithm performance, calculating the expected intensities of all spots
+    spot_fields=np.sum(1.0/(float(pup_coords[0].shape[0]))*np.exp(1j*(slm_total_phase[None,:]-slm_p_phase)),axis=1)
+    # Questa cosa corrisponde alla trasformata di fourier valutata in k=0. Quale è la componente di onda piana? quella che poiu andrebbe a focalizzarsi nell'ordine 0?;
+    
+    ints=np.abs(spot_fields)**2
+
+    #reshaping of the hologram in a square array
+    out=np.zeros((res,res))
+    out=np.random.uniform(-np.pi,np.pi,(res,res))
+
+    #initialize output array
+    out[pup_coords]=slm_total_phase
+    #replace output values only in pupil region
+
+
+    #the function returns the hologram, and a list with efficiency, uniformity and variance of the spots, and hologram computation time
+    
+    return out,[np.sum(ints),1-(np.max(ints)-np.min(ints))/(np.max(ints)+np.min(ints)),np.sqrt(np.var(ints))/np.mean(ints),t]

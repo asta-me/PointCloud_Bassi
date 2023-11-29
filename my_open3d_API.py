@@ -222,9 +222,9 @@ def escaping_planet(time_points, **kwargs):
     G = 1 # gravitational constant
     M = 5.0 # earth mass
     m = 0.5 # moon mass
-    pos_moon = np.array((0.8, -0.9, -1.0)) # initial position of the moon
+    pos_moon = np.array((0.8, -0.8, 0.0)) # initial position of the moon
     vel_moon = np.array((0.0, -0.2, -3.0)) # initial velocity of the moon
-    pos_earth = np.array((0.0, 0.0, -1.0)) # initial position of the earth
+    pos_earth = np.array((0.0, 0.0, 0.0)) # initial position of the earth
     vel_earth = -vel_moon*m/M # initial velocity of the earth with conservation of momentum
     vel_earth+=np.array((0.0, 0.0, -1))
 
