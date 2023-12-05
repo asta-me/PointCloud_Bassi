@@ -10,11 +10,12 @@ lam=532e-9;             #[m] wavelength
 res=1080;
 
 #Hologram distance
-depth=0.5;
+depth=0.4;
 #Frameindex
 i=1;
 
-for mesh_list in escaping_planet(time_points=600,
+
+for mesh_list in escaping_planet(time_points=500,
                                 show_animation=True,
                                 remove_hidden_lines=False,
                                 show_mesh=False,
@@ -40,5 +41,7 @@ for mesh_list in escaping_planet(time_points=600,
     # rs_phase, performance = rs(x1, y1, z1, x2, y2, z2, d, lam, res)
     # rs_phase_bmp=phase_to_bmp(phase=rs_phase);
     # save_frame(rs_phase_bmp,i,title="minitest",subfolder="minitest_folder")    
+ 
     i+=1;
 
+print('Finished, tutto apposto')

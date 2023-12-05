@@ -2,6 +2,7 @@ import open3d as o3d
 import numpy as np
 from numpy.linalg import norm
 from my_open3d_utils import visualizer
+from tqdm import tqdm
 
 class Body:
     def __init__(self, radius =1.0, mass = 1.0,
@@ -235,7 +236,7 @@ def escaping_planet(time_points, **kwargs):
     moon.translate(pos_moon)
 
     dt = 0.01
-    for i in range(time_points):
+    for i in tqdm(range(time_points)):
         distance = pos_moon-pos_earth
         force = - G*M*m * distance/norm(distance)**3 # force on the moon
         acc_moon = force/m
