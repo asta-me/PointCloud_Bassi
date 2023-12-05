@@ -10,11 +10,11 @@ lam=532e-9;             #[m] wavelength
 res=1080;
 
 #Hologram distance
-depth=0.5;
+depth=0.4;
 #Frameindex
 i=1;
 
-for mesh_list in escaping_planet(time_points=3,
+for mesh_list in escaping_planet(time_points=500,
                                 show_animation=True,
                                 remove_hidden_lines=False,
                                 show_mesh=False,
@@ -29,12 +29,13 @@ for mesh_list in escaping_planet(time_points=3,
 
     x1,y1,z1,x2,y2,z2=oe_to_input(origins,ends,depth,lam,d,res,margin=0.005,image_extent=2);
     
-    print(f"Computing {i} of 3")
+    print(f"Computing {i} of 500")
     print('Maximum displacement from the center of the field of view:', np.max(np.abs(origins),axis=0))
-    print(f'This time-point has {points.shape[0]} points and {lines.shape[0]} lines')
+    # print(f'This time-point has {points.shape[0]} points and {lines.shape[0]} lines')
     
     rs_phase, performance = rs(x1, y1, z1, x2, y2, z2, d, lam, res)
     rs_phase_bmp=phase_to_bmp(phase=rs_phase);
-    save_frame(rs_phase_bmp,i,title="minitest",subfolder="minitest_folder")    
+    save_frame(rs_phase_bmp,i,title="minitest2",subfolder="minitest_folder2")    
     i+=1;
 
+print('Finished, tutto apposto')
