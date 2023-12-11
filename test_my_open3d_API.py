@@ -36,11 +36,11 @@ for mesh_list in escaping_planet(time_points=500,
     print('y max ', np.max((y1,y2)), 'y min ', np.min ((y1,y2)))
     print('z max ', np.max((z1,z2)), 'z min ', np.min ((z1,z2))) 
     
-    # print(f'This time-point has {points.shape[0]} points and {lines.shape[0]} lines')
+    # # print(f'This time-point has {points.shape[0]} points and {lines.shape[0]} lines')
     
     rs_phase, performance = rs(x1, y1, z1, x2, y2, z2, d, lam, res)
     rs_phase_bmp=phase_to_bmp(phase=rs_phase);
-    save_frame(rs_phase_bmp,i,title="Escaping_planet_test",subfolder="test_Escaping_Planet__04_to_06")    
+    save_frame(rs_phase_bmp,i,title="Escaping_planet_test",subfolder="test_Escaping_Planet__04_to_09")    
  
     # Update counter
     i+=1;
