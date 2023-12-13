@@ -61,11 +61,13 @@ pygame.quit()
 pygame.init()
 screen = pygame.display.set_mode((win_width, win_height))
 
-# Load the image
+clock = pygame.time.Clock()
+framerate=20;
+# Load the frames
 for i in tqdm(range (1, 501)) :
     imgpath = r'C:\Users\astam\Desktop\Python\PointCloud_Bassi\test_Escaping_Planet__04_to_09\Escaping_planet_test_'+str(i)+'.bmp'
     img_surf = pygame.image.load(imgpath)
     screen.blit(img_surf, dest)
     pygame.display.flip()
-
+    clock.tick(framerate)
 pygame.quit()
