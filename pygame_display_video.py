@@ -38,7 +38,9 @@ pygame.display.set_caption("Pygame Window")
 dest = (0.5 * (win_width - 1080), 0)
 
 # Load the image
-imgpath = r'C:\Users\astam\Desktop\Python\PointCloud_Bassi\test_Escaping_Planet__04_to_09\Escaping_planet_test_9.bmp'
+# imgpath = r'C:\Users\astam\Desktop\Python\PointCloud_Bassi\test_Escaping_Planet__04_to_09\Escaping_planet_test_9.bmp'
+imgpath = r"C:\Users\astam\Desktop\Repositories\PointCloud_Bassi\test_Escaping_Planet__04_to_09\Escaping_planet_test_9.bmp"
+
 img_surf = pygame.image.load(imgpath)
 
 # Blit the image onto the screen at the specified position
@@ -48,26 +50,38 @@ screen.blit(img_surf, dest)
 pygame.display.flip()
 
 # Attendi finché l'utente non preme Invio
-waiting_for_input = True
-while waiting_for_input:
-    for event in pygame.event.get():
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:   
-            waiting_for_input = False
+# waiting_for_input = True
+# while waiting_for_input:
+#     for event in pygame.event.get():
+#         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:   
+#             waiting_for_input = False
         
 # Quit Pygame
 pygame.quit()
+
+print("Test image displayed correctly")
+
 
 #%% Run Video
 pygame.init()
 screen = pygame.display.set_mode((win_width, win_height))
 
 clock = pygame.time.Clock()
-framerate=20;
+framerate=30;
 # Load the frames
+
 for i in tqdm(range (1, 501)) :
-    imgpath = r'C:\Users\astam\Desktop\Python\PointCloud_Bassi\test_Escaping_Planet__04_to_09\Escaping_planet_test_'+str(i)+'.bmp'
+    imgpath = r"C:\Users\astam\Desktop\Repositories\PointCloud_Bassi\test_Escaping_Planet__04_to_09\Escaping_planet_test_"+str(i)+".bmp"
     img_surf = pygame.image.load(imgpath)
     screen.blit(img_surf, dest)
     pygame.display.flip()
     clock.tick(framerate)
+
+for i in tqdm(range (250)) :
+    imgpath = r"C:\Users\astam\Downloads\Satellite_Video\satellite_video_"+str(i)+".bmp"
+    img_surf = pygame.image.load(imgpath)
+    screen.blit(img_surf, dest)
+    pygame.display.flip()
+    clock.tick(framerate)
+
 pygame.quit()
